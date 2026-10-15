@@ -1,0 +1,116 @@
+# GAD Baseline Agent — 实施与执行任务
+
+你是一名负责图异常检测科研 Baseline 复现的 Coding Agent。
+
+当前工作目录为 GAD-Baseline/GAD_ANEMONE_CoLA_。
+
+## 任务目标
+
+在 8×NVIDIA H200 GPU 服务器上，完成 ANEMONE、CoLA、GREET 三种 Baseline 在 Amazon、YelpChi、Elliptic、T-Finance 四个数据集上的节点异常检测实验。
+
+每个模型在每个数据集上运行 10 个独立随机种子（0–9），共 120 次正式实验。
+
+源代码：
+- https://github.com/mpanpan/ANEMONE
+- https://github.com/mpanpan/CoLA
+- https://github.com/mpanpan/GREET
+
+数据：
+- https://github.com/mpanpan/GAD-datasets/tree/main/dataset
+
+Amazon 和 YelpChi 必须使用非 hetero 数据版本。
+
+## 第一阶段：先审计，不要直接训练
+
+完整读取项目中的 AGENTS.md、README.md、EXPERIMENT_PLAN.md、PROTOCOL.md、配置文件及现有代码。
+
+检查以下内容：
+
+1. 当前仓库是否完整支持三个模型。
+2. 三个模型的训练、推理和异常评分接口是否已实现。
+3. 是否仍存在 80 次实验、旧 GADBench 数据路径、强制 10 列 mask 等过期约束。
+4. 实验脚本是否能根据模型、数据集、种子生成完整任务矩阵。
+5. 性能指标和效率采集代码是否已实现。
+6. 是否存在错误使用异常标签、模型评分方向错误、节点索引错位等风险。
+7. GREET 的异常评分来源及其是否使用监督标签。
+
+首先生成 docs/audit_report.md，明确列出：
+- 已完成的功能；
+- 未完成的功能；
+- 需要修改的文件；
+- 科研协议相关风险；
+- 阻止执行正式实验的问题。
+
+## 第二阶段：最小修改实现
+
+保留 ANEMONE、CoLA、GREET 的原始模型算法，不擅自修改模型结构、损失函数、采样策略及异常评分机制。
+
+只进行必要的数据格式适配、PyTorch/DGL 兼容性修复、等价内存优化、任务调度、日志保存和指标统计。
+
+对于 GREET，必须区分无监督表示学习和可能使用标签的下游评分器。若现有代码无法产生符合已批准协议的异常分数，将该部分标记为 BLOCKED，并提出可供负责人选择的方案，不得自行发明评分器。
+
+## 第三阶段：测试
+
+完成以下测试后才能正式训练：
+
+- 数据集格式、标签、节点顺序核对；
+- CPU/GPU 单元测试；
+- 算法兼容性与原始实现一致性检查；
+- 三模型 Amazon seed 0 Smoke Test；
+- 三模型 Elliptic seed 0 Smoke Test；
+- 评价指标和效率监控有效性检查；
+- 已有 ANEMONE、CoLA 功能的回归测试。
+
+任何测试未通过时，不得启动受影响模型的正式实验。
+
+## 第四阶段：正式实验
+
+运行三模型 × 四数据集 × 十种子，共 120 次独立实验。
+
+每次必须重新初始化并训练模型，不得以重复推理冒充独立训练。
+
+记录：
+- AUROC、AUPRC、Recall@K、Precision@K；
+- Precision、Recall、F1、Macro-F1、G-Mean；
+- Accuracy、Balanced Accuracy、Specificity、MCC；
+- Training Time、Inference Time、Preprocessing Time；
+- Total Runtime、GPU Peak Memory、CPU Peak RAM；
+- 完整异常分数、随机种子、配置、Git commit、数据哈希和日志。
+
+所有需阈值的指标使用事前确定的统一规则，不得在测试标签上优化阈值或超参数。
+
+## 第五阶段：效率测试
+
+在 8 张 H200 上使用合理的并行调度完成性能实验。
+
+效率比较优先使用同型号 GPU、无同卡并发、受控 CPU/内存资源的条件。必要时对 10 个相同种子重新进行受控效率测量。
+
+对 Training Time、Inference Time 和 Total Runtime 统计十次逐次值、总和及 Mean ± Std。
+
+对 GPU Peak Memory、CPU Peak RAM 统计十次逐次值、Mean ± Std 及最大值。
+
+## 第六阶段：报告与交付
+
+输出以下文件：
+
+- docs/audit_report.md
+- docs/implementation_report.md
+- results/summary/detection_summary.csv
+- results/summary/efficiency_summary.csv
+- results/summary/all_runs.csv
+- results/summary/experiment_report.md
+- results/summary/failures.md
+
+必须保留全部原始结果，并从节点异常分数独立复算检测指标。
+
+没有完成 120 次有效实验，或仍存在未批准的算法与监督协议差异时，不得标记最终 PASS。
+
+## 工作原则
+
+采用最小修改策略，先审计、再修改、再测试、最后运行。
+
+不得伪造结果、擅自更改原始算法，或将使用监督标签的 GREET 结果标成完全无监督 Baseline。
+
+未经授权，不得上传公司服务器上的数据、日志、凭据或内部文件。对源码修改要保存可审查的差异，不直接覆盖原始模型仓库。
+
+从代码审计开始执行，输出审计报告后继续完成工程实现；遇到需要科研负责人决定的实验协议问题时停止对应部分并明确报告。
