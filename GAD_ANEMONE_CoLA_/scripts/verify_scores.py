@@ -46,7 +46,8 @@ def main():
                 except Exception as e:
                     failures.append((model,ds,seed,str(e)))
         del graph
-    print(f'Independent score audit validated {seen}/80 files; failures={len(failures)}')
+    expected=len(cfg['models'])*len(cfg['datasets'])*len(cfg['seeds'])
+    print(f'Independent score audit validated {seen}/{expected} files; failures={len(failures)}')
     for item in failures:print('INVALID',*item)
     if failures:raise SystemExit(2)
 if __name__=='__main__':main()

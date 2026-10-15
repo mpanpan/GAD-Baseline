@@ -8,7 +8,7 @@ def parse_csv(x, converter=str):
     return [converter(v) for v in x.split(',') if v.strip()]
 
 
-def valid_success(run_dir, model, dataset, seed):
+def valid_success(run_dir, model, dataset, seed, config):
     fp=run_dir/'metrics.json'
     sp=run_dir/'scores.npz'
     if not (fp.exists() and sp.exists()):
@@ -16,7 +16,10 @@ def valid_success(run_dir, model, dataset, seed):
     try:
         doc=json.loads(fp.read_text(encoding='utf-8'))
         return (doc['status']=='SUCCESS' and doc['model']==model and
-                doc['dataset']==dataset and doc['seed']==seed and
+                doc['dataset']==dataset and doc['seed']==seed and doc.get('trial')==seed and
+                doc.get('config')==config['model_config'][model] and
+                doc.get('dataset_source_git_sha')==config['dataset_repo_commit'] and
+                doc.get('source_git_sha') not in (None,'UNAVAILABLE') and
                 'AUROC' in doc['metrics'] and 'AUPRC_AP' in doc['metrics'])
     except Exception:
         return False
@@ -27,7 +30,7 @@ def main():
     p.add_argument('--data-root',required=True)
     p.add_argument('--gpus',default='0')
     p.add_argument('--max-parallel',type=int,default=2)
-    p.add_argument('--models',default='cola,anemone')
+    p.add_argument('--models',default=None,help='Comma-separated subset; defaults to all configured models')
     p.add_argument('--datasets',default='amazon,yelp,elliptic,tfinance')
     p.add_argument('--seeds',default='0,1,2,3,4,5,6,7,8,9')
     p.add_argument('--config',default='configs/experiment.json')
@@ -37,7 +40,7 @@ def main():
     a=p.parse_args()
     cfg=json.loads(Path(a.config).read_text(encoding='utf-8'))
     gpus=parse_csv(a.gpus)
-    models=parse_csv(a.models)
+    models=parse_csv(a.models) if a.models else list(cfg['models'])
     datasets=parse_csv(a.datasets)
     seeds=parse_csv(a.seeds,int)
     if not gpus or len(gpus)!=len(set(gpus)) or a.max_parallel < 1:
@@ -51,7 +54,7 @@ def main():
     outroot=Path(a.output_root)
     for model,dataset,seed in jobs:
         rd=outroot/model/dataset/f'seed_{seed}'
-        if valid_success(rd,model,dataset,seed):
+        if valid_success(rd,model,dataset,seed,cfg):
             print('SKIP success',model,dataset,seed)
         else:
             waiting.append((model,dataset,seed))
@@ -98,7 +101,7 @@ def main():
                 continue
             f.write('END '+json.dumps({'returncode':rc,'time':time.ctime()})+'\n');f.close()
             del running[pid];free.append(slot)
-            if rc==0 and valid_success(rd,model,dataset,seed):
+            if rc==0 and valid_success(rd,model,dataset,seed,cfg):
                 print('SUCCESS',model,dataset,seed,flush=True)
             else:
                 (rd/'run.failed').write_text(f'Return code {rc}; inspect run.log\n',encoding='utf-8')
@@ -107,7 +110,7 @@ def main():
     if failed:
         print('Failures:',failed,file=sys.stderr)
         raise SystemExit(1)
-    print('All requested tasks successful; run python scripts/report.py for strict 80/80 audit')
+    print(f'All {len(jobs)} requested tasks successful; run python scripts/report.py for the strict matrix audit')
 
 if __name__=='__main__':
     main()

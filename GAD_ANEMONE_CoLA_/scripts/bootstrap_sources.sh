@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 mkdir -p external
-for spec in "ANEMONE https://github.com/mpanpan/ANEMONE.git" "CoLA https://github.com/mpanpan/CoLA.git"; do
+for spec in "ANEMONE https://github.com/mpanpan/ANEMONE.git" "CoLA https://github.com/mpanpan/CoLA.git" "GREET https://github.com/mpanpan/GREET.git"; do
   read -r name url <<<"$spec"
   if [[ -d "external/$name/.git" ]]; then
     echo "Already exists: external/$name; unchanged"

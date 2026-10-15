@@ -3,7 +3,7 @@
   "dataset_repository": "https://github.com/mpanpan/GAD-datasets",
   "dataset_repo_commit": "48ba3c0ce4e367c8411937cd0e5851d8a8f66e6d",
   "elliptic_split": "known_labels_stratified_10_10_80_seed_0_to_9",
-  "models": ["cola", "anemone"],
+  "models": ["cola", "anemone", "greet"],
   "datasets": ["amazon", "yelp", "elliptic", "tfinance"],
   "seeds": [0,1,2,3,4,5,6,7,8,9],
   "seed_to_gadbench_trial": "identity",
@@ -14,6 +14,13 @@
   "validation_threshold": "max_f1",
   "model_config": {
     "cola": {"status": "REQUIRES_PORT_AND_HPARAM_APPROVAL", "test_rounds": 256},
-    "anemone": {"status": "REQUIRES_PORT_AND_HPARAM_APPROVAL", "test_rounds": 256}
+    "anemone": {"status": "REQUIRES_PORT_AND_HPARAM_APPROVAL", "test_rounds": 256},
+    "greet": {
+      "status": "BLOCKED_SCORE_PROTOCOL",
+      "score_method": "UNDECIDED",
+      "label_use": "UNDECIDED",
+      "source_repository": "https://github.com/mpanpan/GREET",
+      "source_git_sha": "UNVERIFIED"
+    }
   }
 }

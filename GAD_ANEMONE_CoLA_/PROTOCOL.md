@@ -4,6 +4,8 @@
 
 **Split:** For the three DGL binaries, use stored `test_masks[:,seed]` and `val_masks[:,seed]`. The published Elliptic CSV lacks masks; deterministically stratify known labels by class and seed into 10% unused, 10% validation, 80% test. Unknowns remain graph context and are excluded from calibration/evaluation. The Elliptic split construction uses labels, while self-supervised model training does not. Feature scaling, if performed, must be documented and must not use labels. Disclose that the binary masks and Elliptic masks have different origins.
 
+**Shared evaluation:** For each dataset and seed, all three methods use the same test node IDs, label mapping and metric implementation. Their training procedures may legitimately differ. Save the exact evaluation node IDs with every score array. `GREET` remains `BLOCKED_SCORE_PROTOCOL` until a genuine node anomaly score and its label use are confirmed. A logistic-probe anomaly probability is labeled `GREET + supervised probe`, with fit node IDs, label budget and scorer-fit time; it is not an unsupervised score.
+
 ## Threshold-free primary metrics
 - `AUROC`: `sklearn.metrics.roc_auc_score(y_test, score_test)`.
 - `AUPRC_AP`: `sklearn.metrics.average_precision_score(y_test, score_test)` (**AP**, step-interpolated, not trapezoidal PR-AUC). We label AP as AUPRC explicitly.
@@ -19,3 +21,7 @@ Define threshold prediction consistently `score >= threshold`; score ties broken
 **Inference stochasticity:** original CoLA/ANEMONE average anomaly scores across multiple random-subgraph test rounds (often 256). This must remain fixed for every model-dataset-seed, subject to audited original implementation. Save inference rounds and timing. `run seed` controls both training and inference RNG; scores per node must remain aligned.
 
 **Unknown label caveat:** Elliptic commonly contains unknown transaction labels. Unknowns may remain graph context but must not be treated as normal for evaluation. If graph's actual encoding differs, document explicit mapping before running; never assume.
+
+## Timing and memory
+
+Measure preprocessing, training, optional scorer fitting, inference and total runtime per seed. Synchronize CUDA at phase boundaries. Record peak CUDA allocated memory and peak CPU process-plus-child RSS separately for train and inference, including the sampling interval; keep overall peaks as additional fields. Summarize each time field by 10-run sum, mean and sample SD; each memory peak by mean, sample SD and maximum. Memory peaks are not additive. The current runner supplies only overall process RSS/CUDA peaks and training/inference times; the executing Agent must add phase measurements before claiming the requested efficiency report is complete.

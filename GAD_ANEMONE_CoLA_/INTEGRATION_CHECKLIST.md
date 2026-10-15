@@ -2,6 +2,13 @@
 
 > No original model code bundled. User's `mpanpan` forks could differ from upstream. They must be inspected, cloned and SHA-pinned on the server before completing adapters. This package implements evaluation/distribution, not original model mathematics.
 
+## GREET (new, blocked until score protocol is approved)
+1. Pin `mpanpan/GREET` and compare its `main.py`, `model.py`, `utils.py`, `data_loader.py` with official `yixinliu233/GREET`. Record SHAs and the diff. The local audit in `GREET_SOURCE_AUDIT.md` is evidence for a local copy only, not a remote commit.
+2. Separate self-supervised representation learning from any labeled downstream probe. The original `eval_test_mode` fits logistic regression on training labels and evaluates test accuracy during training; it is not an unsupervised anomaly score. Remove test-label access from checkpoint/hyperparameter selection in the adapted path without changing the representation-learning objective.
+3. Resolve a continuous `(node_id, anomaly_score)` method before approval. If the only viable method is a labeled classifier, name the result `GREET + supervised probe`, record fit labels/node IDs and scorer-fit time, and report it as a different supervision track. Do not invent an anomaly formula or silently reuse a classification accuracy.
+4. The original KNN mask and adjacency paths allocate dense N×N arrays. Preserve mathematical semantics with audited sparse/chunked engineering or document any approximation explicitly. Run small-graph comparisons of graph construction, logits/losses, embeddings and scores.
+5. Implement `adapters/greet.py` only after steps 1–4. Keep the existing ANEMONE/CoLA adapter contracts and regression tests intact. Report preprocessing/structure encoding, training, scorer fitting, inference and phase-specific memory separately.
+
 ## CoLA
 1. Identify `run.py`, `utils.py`, `model.py` from actual SHA; map its DGL construction, random-walk generation, sampling, contrastive loss and score calculation.
 2. Port old `dgl.DGLGraph(nx_graph)` to supported `dgl.graph((src,dst),num_nodes=N)` or equivalent; inspect self-loops, edge direction, multiplicities, node order.
